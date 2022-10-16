@@ -1,0 +1,21 @@
+name: 'gcp-secrets-action'
+description: 'Use Google Cloud secret manager'
+branding:
+  icon: lock
+  color: blue
+inputs:
+  gcp_credentials_json:
+    description: '(optional) Embedded auth for GCP'
+    required: false
+  template_file:
+    description: 'The file where to replace the secrets. Optional if env_file is provided'
+    required: false
+  env_file:
+    description: 'The env file where to replace the secrets. Env file will be applied. Optional if template_file is provided'
+    required: false
+  key_prefix:
+    description: '(optional) A prefix to add to all keys when calling GCP'
+    required: false
+runs:
+  using: 'node16'
+  main: 'lib_main/index.js'
