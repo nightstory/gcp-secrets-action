@@ -11,6 +11,10 @@ export class TemplateProcessor {
   }
 
   async processFile(file: string, keysPrefix: string) {
+    this.applySecrets(file, await this.extractSecrets(file, keysPrefix))
+  }
+
+  async extractSecrets(file: string, keysPrefix: string): Promise<{ [keys: string]: string }> {
     const secretKeys = this.extractSecretKeys(file)
     const secretsMap: { [keys: string]: string } = {}
 
@@ -18,7 +22,17 @@ export class TemplateProcessor {
       secretsMap[key] = await this.googleClient.accessSecret(new GoogleSecretManagerReference(keysPrefix + key).selfLink())
     }
 
-    this.applySecrets(file, secretsMap)
+    return secretsMap
+  }
+
+  applySecretsInString(input: string, data: { [keys: string]: string }): string {
+    let content = input
+
+    for (let key in data) {
+      content = content.replace(this.replaceRegex(key), data[key])
+    }
+
+    return content
   }
 
   private replaceRegex(key: string): RegExp {
@@ -34,12 +48,7 @@ export class TemplateProcessor {
   }
 
   private applySecrets(file: string, data: { [keys: string]: string }): void {
-    let content = fs.readFileSync(file).toString()
-
-    for (let key in data) {
-      content = content.replace(this.replaceRegex(key), data[key])
-    }
-
+    let content = this.applySecretsInString(fs.readFileSync(file).toString(), data)
     fs.writeFileSync(file, content)
   }
 }

@@ -22,7 +22,6 @@ const main = async () => {
   }
 
   if (options.envFile) {
-    await processor.processFile(options.envFile, options.keyPrefix)
     const result = require('dotenv').config({ path: options.envFile, override: true })
 
     if (result.error || !result.parsed) {
@@ -30,8 +29,10 @@ const main = async () => {
       process.exit(1)
     }
 
+    const secrets = await processor.extractSecrets(options.envFile, options.keyPrefix)
+
     for (const key in result.parsed) {
-      core.exportVariable(key, result.parsed[key])
+      core.exportVariable(key, processor.applySecretsInString(result.parsed[key], secrets))
     }
   }
 }

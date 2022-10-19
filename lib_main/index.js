@@ -49183,13 +49183,25 @@ class TemplateProcessor {
     }
     processFile(file, keysPrefix) {
         return __awaiter(this, void 0, void 0, function* () {
+            this.applySecrets(file, yield this.extractSecrets(file, keysPrefix));
+        });
+    }
+    extractSecrets(file, keysPrefix) {
+        return __awaiter(this, void 0, void 0, function* () {
             const secretKeys = this.extractSecretKeys(file);
             const secretsMap = {};
             for (let key of secretKeys) {
                 secretsMap[key] = yield this.googleClient.accessSecret(new GoogleSecretManagerReference_1.GoogleSecretManagerReference(keysPrefix + key).selfLink());
             }
-            this.applySecrets(file, secretsMap);
+            return secretsMap;
         });
+    }
+    applySecretsInString(input, data) {
+        let content = input;
+        for (let key in data) {
+            content = content.replace(this.replaceRegex(key), data[key]);
+        }
+        return content;
     }
     replaceRegex(key) {
         return new RegExp(`\\{\\{\\s*${key}\\s*}}`, 'g');
@@ -49201,10 +49213,7 @@ class TemplateProcessor {
         return [...new Set(keys)];
     }
     applySecrets(file, data) {
-        let content = fs.readFileSync(file).toString();
-        for (let key in data) {
-            content = content.replace(this.replaceRegex(key), data[key]);
-        }
+        let content = this.applySecretsInString(fs.readFileSync(file).toString(), data);
         fs.writeFileSync(file, content);
     }
 }
@@ -49474,14 +49483,14 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
         yield processor.processFile(options.templateFile, options.keyPrefix);
     }
     if (options.envFile) {
-        yield processor.processFile(options.envFile, options.keyPrefix);
         const result = (__nccwpck_require__(2437).config)({ path: options.envFile, override: true });
         if (result.error || !result.parsed) {
             core.setFailed(`failed to parse result env file: ${result.error}`);
             process.exit(1);
         }
+        const secrets = yield processor.extractSecrets(options.envFile, options.keyPrefix);
         for (const key in result.parsed) {
-            core.exportVariable(key, result.parsed[key]);
+            core.exportVariable(key, processor.applySecretsInString(result.parsed[key], secrets));
         }
     }
 });
