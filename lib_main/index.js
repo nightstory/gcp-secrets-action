@@ -49485,13 +49485,14 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
     if (options.envFile) {
         const result = (__nccwpck_require__(2437).config)({ path: options.envFile, override: true });
         if (result.error || !result.parsed) {
-            core.setFailed(`failed to parse result env file: ${result.error}`);
+            core.setFailed(`failed to parse the env file: ${result.error}`);
             process.exit(1);
         }
         const secrets = yield processor.extractSecrets(options.envFile, options.keyPrefix);
         for (const key in result.parsed) {
             core.exportVariable(key, processor.applySecretsInString(result.parsed[key], secrets));
         }
+        yield processor.processFile(options.envFile, options.keyPrefix);
     }
 });
 try {

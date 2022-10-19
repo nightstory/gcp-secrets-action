@@ -22,10 +22,10 @@ const main = async () => {
   }
 
   if (options.envFile) {
-    const result = require('dotenv').config({ path: options.envFile, override: true })
+    const result = require('dotenv').config({path: options.envFile, override: true})
 
     if (result.error || !result.parsed) {
-      core.setFailed(`failed to parse result env file: ${result.error}`)
+      core.setFailed(`failed to parse the env file: ${result.error}`)
       process.exit(1)
     }
 
@@ -34,6 +34,8 @@ const main = async () => {
     for (const key in result.parsed) {
       core.exportVariable(key, processor.applySecretsInString(result.parsed[key], secrets))
     }
+
+    await processor.processFile(options.envFile, options.keyPrefix)
   }
 }
 
